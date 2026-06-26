@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# 虚拟环境
+.venv/
+venv/
+env/
+
+# 环境配置（含敏感信息）
+.env
+
+# pytest
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE
+.idea/
+.vscode/
+
+# macOS
+.DS_Store
+
+# 构建产物
+dist/
+build/
+*.egg-info/
