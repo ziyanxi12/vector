@@ -10,7 +10,7 @@ def get_es_repository() -> EsRepository:
     if settings.es_mock:
         return _mock_es
     from .client.es_real import ElasticsearchRepository
-    return ElasticsearchRepository(settings.es_url, settings.es_username, settings.es_password)
+    return ElasticsearchRepository(settings.es_url, settings.es_username, settings.es_password, settings.es_verify_certs)
 
 
 def get_texttovec_client() -> TextToVecClient:

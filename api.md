@@ -190,7 +190,60 @@ Base URL: `http://{host}:{port}`
 
 ---
 
-## 4. 精确查询
+## 4. 批量搜索
+
+**POST** `/api/v1/search/batch`
+
+供后端 API 调用，并发执行多个查询，返回二维结果。
+
+### 请求
+
+| 字段 | 类型 | 必填 | 默认 | 说明 |
+|------|------|------|------|------|
+| type | string | 是 | — | 数据类型 |
+| queries | array[string] | 是 | — | 查询文本列表，至少 1 条 |
+| mode | string | 否 | `vector` | `vector` / `text` / `hybrid` |
+| top_k | integer | 否 | `10` | 每个 query 返回条数 |
+| filters | object | 否 | `{}` | 精确过滤条件 |
+| hybrid_weight | float | 否 | `0.7` | hybrid 模式向量分数权重 |
+
+```json
+{
+  "type": "component",
+  "queries": ["蓝色按钮", "输入框", "下拉菜单"],
+  "mode": "vector",
+  "top_k": 5
+}
+```
+
+### 响应 `200`
+
+`results` 为二维数组，顺序与 `queries` 一一对应。
+
+```json
+{
+  "results": [
+    [
+      { "data_id": "comp_001", "text": "蓝色主按钮", "score": 0.92, "metadata": {} }
+    ],
+    [
+      { "data_id": "comp_003", "text": "文本输入框", "score": 0.88, "metadata": {} }
+    ],
+    []
+  ]
+}
+```
+
+### 错误
+
+| 状态码 | 原因 |
+|--------|------|
+| 400 | 未知 type |
+| 422 | queries 为空 |
+
+---
+
+## 5. 精确查询
 
 **GET** `/api/v1/item`
 
@@ -231,7 +284,7 @@ GET /api/v1/item?type=component&data_id=comp_001
 
 ---
 
-## 5. 删除
+## 6. 删除
 
 **DELETE** `/api/v1/item`
 

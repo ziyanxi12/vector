@@ -17,6 +17,10 @@ class SearchResponse(BaseModel):
     results: list[SearchHit]
 
 
+class SearchBatchResponse(BaseModel):
+    results: list[list[SearchHit]]
+
+
 class ItemResponse(BaseModel):
     data_id: str
     text: str

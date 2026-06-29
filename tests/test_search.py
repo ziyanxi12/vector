@@ -92,3 +92,30 @@ async def test_get_item(client, mock_es):
 async def test_get_item_not_found(client, mock_es):
     resp = await client.get("/api/v1/item", params={"type": "component", "data_id": "not_exist"})
     assert resp.status_code == 404
+
+
+@respx.mock
+async def test_search_batch(client, mock_es):
+    await _seed(mock_es)
+    respx.post("http://localhost:8099/textToVec").mock(side_effect=make_texttovec_response)
+
+    resp = await client.post("/api/v1/search/batch", json={
+        "type": "component",
+        "queries": ["按钮", "输入框"],
+        "mode": "vector",
+        "top_k": 3,
+    })
+
+    assert resp.status_code == 200
+    results = resp.json()["results"]
+    assert len(results) == 2
+    assert isinstance(results[0], list)
+    assert isinstance(results[1], list)
+
+
+async def test_search_batch_empty_queries(client):
+    resp = await client.post("/api/v1/search/batch", json={
+        "type": "component",
+        "queries": [],
+    })
+    assert resp.status_code == 422

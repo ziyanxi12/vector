@@ -1,4 +1,4 @@
-from typing import Literal, Optional
+from typing import Literal, Optional, Union
 from pydantic import BaseModel, field_validator, model_validator
 
 
@@ -54,6 +54,22 @@ class SearchRequest(BaseModel):
     top_k: int = 10
     filters: dict = {}
     hybrid_weight: float = 0.7
+
+
+class SearchBatchRequest(BaseModel):
+    type: str
+    queries: list[str]
+    mode: Literal["vector", "text", "hybrid"] = "vector"
+    top_k: int = 10
+    filters: dict = {}
+    hybrid_weight: float = 0.7
+
+    @field_validator("queries")
+    @classmethod
+    def queries_not_empty(cls, v: list) -> list:
+        if not v:
+            raise ValueError("queries cannot be empty")
+        return v
 
 
 class DeleteRequest(BaseModel):

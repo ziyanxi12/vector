@@ -9,6 +9,9 @@ class Settings(BaseSettings):
     es_url: str = "http://localhost:9200"
     es_username: str = ""
     es_password: str = ""
+    es_verify_certs: bool = True
+
+    log_dir: str = "logs"
 
     model_config = {"env_file": ".env"}
 
