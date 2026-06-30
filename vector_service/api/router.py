@@ -2,14 +2,14 @@ import time
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from ..dependencies import get_es_repository, get_texttovec_client
-from ..handler.registry import get_handler
-from ..logger import get_logger
-from ..model.request import DeleteRequest, IngestRequest, SearchBatchRequest, SearchRequest, UpdateRequest
-from ..model.response import IngestResponse, ItemResponse, SearchBatchResponse, SearchResponse
-from ..service import ingest as ingest_svc
-from ..service import search as search_svc
-from ..service import update as update_svc
+from dependencies import get_es_repository, get_texttovec_client
+from handler.registry import get_handler
+from logger import get_logger
+from model.request import DeleteRequest, IngestRequest, SearchBatchRequest, SearchRequest, UpdateRequest
+from model.response import IngestResponse, ItemResponse, SearchBatchResponse, SearchResponse
+from service import ingest as ingest_svc
+from service import search as search_svc
+from service import update as update_svc
 
 router = APIRouter(prefix="/api/v1")
 logger = get_logger(__name__)

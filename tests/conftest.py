@@ -1,11 +1,15 @@
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent / "vector_service"))
+
 import json
 import pytest
 import httpx
 import respx
 from httpx import AsyncClient, ASGITransport
-from vector_service.main import app
-from vector_service.client.es_repository import MockEsRepository
-from vector_service.dependencies import get_es_repository
+from main import app
+from client.es_repository import MockEsRepository
+from dependencies import get_es_repository
 
 
 COMPONENT_META = {

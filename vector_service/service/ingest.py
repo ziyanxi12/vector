@@ -2,12 +2,12 @@ import asyncio
 import time
 
 from fastapi import HTTPException
-from ..client.es_repository import EsDoc, EsRepository
-from ..client.texttovec import TextItem, TextToVecClient
-from ..handler.base import BaseHandler
-from ..logger import get_logger
-from ..model.request import IngestRequest
-from ..model.response import IngestResponse
+from client.es_repository import EsDoc, EsRepository
+from client.texttovec import TextItem, TextToVecClient
+from handler.base import BaseHandler
+from logger import get_logger
+from model.request import IngestRequest
+from model.response import IngestResponse
 
 logger = get_logger(__name__)
 

@@ -1,12 +1,12 @@
 import asyncio
 import time
 
-from ..client.es_repository import EsRepository, SearchResult
-from ..client.texttovec import TextItem, TextToVecClient
-from ..handler.base import BaseHandler
-from ..logger import get_logger
-from ..model.request import SearchBatchRequest, SearchRequest
-from ..model.response import SearchBatchResponse, SearchHit, SearchResponse
+from client.es_repository import EsRepository, SearchResult
+from client.texttovec import TextItem, TextToVecClient
+from handler.base import BaseHandler
+from logger import get_logger
+from model.request import SearchBatchRequest, SearchRequest
+from model.response import SearchBatchResponse, SearchHit, SearchResponse
 
 logger = get_logger(__name__)
 

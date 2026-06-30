@@ -1,11 +1,11 @@
 import time
 
 from fastapi import HTTPException
-from ..client.es_repository import EsRepository
-from ..client.texttovec import TextItem, TextToVecClient
-from ..handler.base import BaseHandler
-from ..logger import get_logger
-from ..model.request import UpdateRequest
+from client.es_repository import EsRepository
+from client.texttovec import TextItem, TextToVecClient
+from handler.base import BaseHandler
+from logger import get_logger
+from model.request import UpdateRequest
 
 logger = get_logger(__name__)
 
