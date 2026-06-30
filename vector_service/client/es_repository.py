@@ -27,6 +27,9 @@ class BulkResult:
 
 
 class EsRepository(ABC):
+    async def close(self) -> None:
+        pass
+
     @abstractmethod
     async def bulk_upsert(self, index: str, docs: list[EsDoc]) -> BulkResult: ...
 

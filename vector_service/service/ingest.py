@@ -1,3 +1,4 @@
+import asyncio
 import time
 
 from fastapi import HTTPException
@@ -32,26 +33,41 @@ async def ingest(
 
     logger.debug("ingest validation done: valid=%d invalid=%d", len(validated_items), len(failed))
 
+    if not validated_items:
+        return IngestResponse(succeeded=[], failed=failed)
+
+    batches = [validated_items[i:i + BATCH_SIZE] for i in range(0, len(validated_items), BATCH_SIZE)]
+    total_batches = len(batches)
     succeeded = []
-    total_batches = (len(validated_items) + BATCH_SIZE - 1) // BATCH_SIZE
 
-    for i in range(0, len(validated_items), BATCH_SIZE):
-        batch = validated_items[i : i + BATCH_SIZE]
-        batch_num = i // BATCH_SIZE + 1
+    async def _vectorize(batch: list, batch_num: int) -> list:
         text_items = [TextItem(text=item.text, text_id=item.data_id) for item, _ in batch]
-
         logger.debug("ingest batch %d/%d: encoding %d items", batch_num, total_batches, len(batch))
         t0 = time.monotonic()
+        vectors = await texttovec.encode(text_items)
+        logger.debug("vectorize batch %d/%d done [%.0fms]", batch_num, total_batches, (time.monotonic() - t0) * 1000)
+        return vectors
+
+    # 提前启动第一个 batch 的向量化
+    next_vec_task: asyncio.Task = asyncio.create_task(_vectorize(batches[0], 1))
+
+    for idx, batch in enumerate(batches):
+        batch_num = idx + 1
+
         try:
-            vectors = await texttovec.encode(text_items)
+            vectors = await next_vec_task
         except Exception as e:
             logger.error("vectorize failed for batch %d/%d: %s", batch_num, total_batches, e, exc_info=True)
             failed.extend({"data_id": item.data_id, "error": str(e)} for item, _ in batch)
+            if idx + 1 < total_batches:
+                next_vec_task = asyncio.create_task(_vectorize(batches[idx + 1], batch_num + 1))
             continue
-        logger.debug("vectorize batch %d/%d done [%.0fms]", batch_num, total_batches, (time.monotonic() - t0) * 1000)
+
+        # 立刻启动下一 batch 向量化，与 ES 写入并发
+        if idx + 1 < total_batches:
+            next_vec_task = asyncio.create_task(_vectorize(batches[idx + 1], batch_num + 1))
 
         vector_map = {v.text_id: v.vector for v in vectors}
-
         docs = []
         for item, metadata in batch:
             vector = vector_map.get(item.data_id)

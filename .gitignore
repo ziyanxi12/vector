@@ -11,6 +11,7 @@ env/
 
 # 环境配置（含敏感信息）
 .env
+vector_service/.env
 
 # pytest
 .pytest_cache/
@@ -28,3 +29,5 @@ htmlcov/
 dist/
 build/
 *.egg-info/
+
+logs/

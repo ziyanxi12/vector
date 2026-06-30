@@ -10,14 +10,17 @@ logger = get_logger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    from .dependencies import get_es_repository, get_texttovec_client
     logger.info("service starting: es_mock=%s log_dir=%s", settings.es_mock, settings.log_dir)
     if not settings.es_mock:
         from .client.es_real import ElasticsearchRepository
-        from .dependencies import get_es_repository
         repo: ElasticsearchRepository = get_es_repository()
         await repo.ensure_template()
     logger.info("service started")
     yield
+    await get_texttovec_client().close()
+    if not settings.es_mock:
+        await get_es_repository().close()
     logger.info("service stopped")
 
 

@@ -27,11 +27,14 @@ INDEX_TEMPLATE = {
 
 
 class ElasticsearchRepository(EsRepository):
-    def __init__(self, url: str, username: str = "", password: str = ""):
+    def __init__(self, url: str, username: str = "", password: str = "", verify_certs: bool = True):
         kwargs = {}
         if username and password:
             kwargs["basic_auth"] = (username, password)
-        self._es = AsyncElasticsearch(hosts=[url], **kwargs)
+        self._es = AsyncElasticsearch(hosts=[url], verify_certs=verify_certs, **kwargs)
+
+    async def close(self) -> None:
+        await self._es.close()
 
     async def ensure_template(self) -> None:
         await self._es.indices.put_index_template(name="vec_template", body=INDEX_TEMPLATE)

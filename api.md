@@ -336,10 +336,10 @@ GET /api/v1/item?type=component&data_id=comp_001
 
 ## 配置说明
 
-复制 `.env.example` 为 `.env` 后按需修改：
+复制 `vector_service/.env.example` 为 `vector_service/.env` 后按需修改：
 
 ```bash
-cp .env.example .env
+cp vector_service/.env.example vector_service/.env
 ```
 
 | 环境变量 | 默认值 | 说明 |
@@ -362,7 +362,7 @@ uvicorn vector_service.main:app --reload --port 8000
 ### 对接真实服务
 
 ```bash
-# .env
+# vector_service/.env
 ES_MOCK=false
 ES_URL=http://your-es-host:9200
 ES_USERNAME=your_username

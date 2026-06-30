@@ -19,24 +19,27 @@ class VectorResult(BaseModel):
 
 
 class TextToVecClient:
-    def __init__(self, base_url: str, dimension: int):
+    def __init__(self, base_url: str, dimension: int, timeout: float = 60.0):
         self.base_url = base_url
         self.dimension = dimension
+        self._client = httpx.AsyncClient(timeout=timeout)
+
+    async def close(self) -> None:
+        await self._client.aclose()
 
     async def encode(self, items: list[TextItem]) -> list[VectorResult]:
         logger.debug("texttovec encode: items=%d dimension=%d", len(items), self.dimension)
         t0 = time.monotonic()
         try:
-            async with httpx.AsyncClient() as client:
-                response = await client.post(
-                    f"{self.base_url}/textToVec",
-                    json={
-                        "dimension": self.dimension,
-                        "text_value": [item.model_dump() for item in items],
-                    },
-                )
-                response.raise_for_status()
-                data = response.json()
+            response = await self._client.post(
+                f"{self.base_url}/textToVec",
+                json={
+                    "dimension": self.dimension,
+                    "text_value": [item.model_dump() for item in items],
+                },
+            )
+            response.raise_for_status()
+            data = response.json()
         except httpx.HTTPStatusError as e:
             logger.error("texttovec HTTP error [%.0fms]: status=%d url=%s",
                          (time.monotonic() - t0) * 1000, e.response.status_code, e.request.url)
