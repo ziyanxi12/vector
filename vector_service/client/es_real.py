@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 from elasticsearch import AsyncElasticsearch, NotFoundError
-from elasticsearch.helpers import async_bulk
+from elasticsearch.helpers import async_streaming_bulk
 from .es_repository import BulkResult, EsDoc, EsRepository, SearchResult
 
 INDEX_TEMPLATE = {
@@ -58,7 +60,7 @@ class ElasticsearchRepository(EsRepository):
         ]
         succeeded = []
         failed = []
-        async for ok, info in async_bulk(self._es, actions, raise_on_error=False):
+        async for ok, info in async_streaming_bulk(self._es, actions, raise_on_error=False):
             if ok:
                 succeeded.append(info["index"]["_id"])
             else:

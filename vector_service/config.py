@@ -13,8 +13,10 @@ class Settings(BaseSettings):
     es_username: str = ""
     es_password: str = ""
     es_verify_certs: bool = True
+    es_index_prefix: str = "vec_"
 
     log_dir: str = "logs"
+    allow_dynamic_type: bool = True
 
     model_config = {"env_file": Path(__file__).parent / ".env"}
 

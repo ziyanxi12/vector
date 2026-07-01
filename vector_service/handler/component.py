@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from .base import BaseHandler
+from config import settings
 
 
 class ComponentMetadata(BaseModel):
@@ -10,7 +11,9 @@ class ComponentMetadata(BaseModel):
 
 
 class ComponentHandler(BaseHandler):
-    index_name = "vec_component"
+    @property
+    def index_name(self) -> str:
+        return f"{settings.es_index_prefix}component"
 
     def validate_metadata(self, metadata: dict) -> dict:
         return ComponentMetadata(**metadata).model_dump()
