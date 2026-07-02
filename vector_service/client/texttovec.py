@@ -1,3 +1,4 @@
+import asyncio
 import time
 
 import httpx
@@ -27,9 +28,14 @@ class TextToVecClient:
     async def close(self) -> None:
         await self._client.aclose()
 
-    async def encode(self, items: list[TextItem]) -> list[VectorResult]:
-        logger.debug("texttovec encode: items=%d dimension=%d", len(items), self.dimension)
-        t0 = time.monotonic()
+async def encode(self, items: list[TextItem]) -> list[VectorResult]:
+    logger.debug("texttovec encode: items=%d dimension=%d", len(items), self.dimension)
+    t0 = time.monotonic()
+    
+    max_retries = 3
+    retry_statuses = {502, 503, 504}
+    
+    for attempt in range(max_retries + 1):
         try:
             response = await self._client.post(
                 f"{self.base_url}/textToVec",
@@ -41,9 +47,16 @@ class TextToVecClient:
             response.raise_for_status()
             data = response.json()
         except httpx.HTTPStatusError as e:
-            logger.error("texttovec HTTP error [%.0fms]: status=%d url=%s",
-                         (time.monotonic() - t0) * 1000, e.response.status_code, e.request.url)
-            raise
+            if e.response.status_code in retry_statuses and attempt < max_retries:
+                wait_time = 2 ** attempt
+                logger.warning("texttovec retryable error: status=%d attempt=%d/%d waiting=%.1fs",
+                              e.response.status_code, attempt + 1, max_retries, wait_time)
+                await asyncio.sleep(wait_time)
+                continue
+            else:
+                logger.error("texttovec HTTP error [%.0fms]: status=%d url=%s",
+                            (time.monotonic() - t0) * 1000, e.response.status_code, e.request.url)
+                raise
         except Exception as e:
             logger.error("texttovec request failed [%.0fms]: %s", (time.monotonic() - t0) * 1000, e, exc_info=True)
             raise
