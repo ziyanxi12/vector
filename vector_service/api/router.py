@@ -5,8 +5,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from dependencies import get_es_repository, get_texttovec_client
 from handler.registry import get_handler
 from logger import get_logger
-from model.request import DeleteRequest, IngestRequest, SearchBatchRequest, SearchRequest, UpdateRequest
-from model.response import IngestResponse, ItemResponse, SearchBatchResponse, SearchResponse
+from model.request import DeleteRequest, IngestRequest, SearchBatchRequest, SearchRequest, UpdateRequest, CheckIdsRequest
+from model.response import IngestResponse, ItemResponse, SearchBatchResponse, SearchResponse, ListIdsResponse, CheckIdsResponse
 from service import ingest as ingest_svc
 from service import search as search_svc
 from service import update as update_svc
@@ -143,3 +143,55 @@ async def delete_item(
 
 def _ms(t0: float) -> float:
     return (time.monotonic() - t0) * 1000
+
+
+@router.get("/ids", response_model=ListIdsResponse)
+async def list_ids(
+    type: str,
+    limit: int = 1000,
+    offset: int = 0,
+    es=Depends(get_es_repository),
+):
+    logger.debug("list_ids request: type=%s limit=%d offset=%d", type, limit, offset)
+    t0 = time.monotonic()
+    if limit > 5000:
+        raise HTTPException(status_code=400, detail="limit cannot exceed 5000")
+    if limit < 1:
+        raise HTTPException(status_code=400, detail="limit must be at least 1")
+    if offset < 0:
+        raise HTTPException(status_code=400, detail="offset must be at least 0")
+    try:
+        handler = get_handler(type)
+        ids, total = await es.list_ids(handler.index_name, limit, offset)
+        has_more = (offset + limit) < total
+    except Exception as e:
+        logger.error("list_ids error [%.0fms]: %s", _ms(t0), e, exc_info=True)
+        raise
+    logger.info("list_ids ok: type=%s total=%d returned=%d [%.0fms]", 
+                type, total, len(ids), _ms(t0))
+    return ListIdsResponse(
+        type=type, total=total, limit=limit, 
+        offset=offset, ids=ids, has_more=has_more
+    )
+
+
+@router.post("/ids/check", response_model=CheckIdsResponse)
+async def check_ids(
+    request: CheckIdsRequest,
+    es=Depends(get_es_repository),
+):
+    logger.debug("check_ids request: type=%s count=%d", request.type, len(request.ids))
+    t0 = time.monotonic()
+    try:
+        handler = get_handler(request.type)
+        exists, missing = await es.check_ids_exists(handler.index_name, request.ids)
+    except Exception as e:
+        logger.error("check_ids error [%.0fms]: %s", _ms(t0), e, exc_info=True)
+        raise
+    logger.info("check_ids ok: type=%s exists=%d missing=%d [%.0fms]",
+                request.type, len(exists), len(missing), _ms(t0))
+    return CheckIdsResponse(
+        type=request.type, total_checked=len(request.ids),
+        exists=exists, missing=missing,
+        exists_count=len(exists), missing_count=len(missing)
+    )

@@ -117,6 +117,36 @@ class ElasticsearchRepository(EsRepository):
         resp = await self._es.search(index=index, body=body, size=top_k)
         return _parse_hits(resp)
 
+    async def count(self, index: str) -> int:
+        try:
+            resp = await self._es.count(index=index)
+            return resp["count"]
+        except NotFoundError:
+            return 0
+
+    async def list_ids(self, index: str, limit: int, offset: int) -> tuple[list[str], int]:
+        total = await self.count(index)
+        if total == 0:
+            return [], 0
+        resp = await self._es.search(
+            index=index,
+            query={"match_all": {}},
+            _source=["data_id"],
+            size=limit,
+            from_=offset
+        )
+        ids = [hit["_source"]["data_id"] for hit in resp["hits"]["hits"]]
+        return ids, total
+
+    async def check_ids_exists(self, index: str, ids: list[str]) -> tuple[list[str], list[str]]:
+        try:
+            resp = await self._es.mget(index=index, body={"ids": ids})
+            exists = [doc["_id"] for doc in resp["docs"] if doc["found"]]
+            missing = list(set(ids) - set(exists))
+            return exists, missing
+        except NotFoundError:
+            return [], ids
+
 
 def _build_filters(filters: dict) -> list[dict]:
     return [{"term": {k: v}} for k, v in filters.items()]

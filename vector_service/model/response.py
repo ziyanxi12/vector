@@ -25,3 +25,21 @@ class ItemResponse(BaseModel):
     data_id: str
     text: str
     metadata: dict
+
+
+class ListIdsResponse(BaseModel):
+    type: str
+    total: int
+    limit: int
+    offset: int
+    ids: list[str]
+    has_more: bool
+
+
+class CheckIdsResponse(BaseModel):
+    type: str
+    total_checked: int
+    exists: list[str]
+    missing: list[str]
+    exists_count: int
+    missing_count: int

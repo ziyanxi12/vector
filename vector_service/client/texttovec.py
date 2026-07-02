@@ -22,7 +22,7 @@ class TextToVecClient:
     def __init__(self, base_url: str, dimension: int, timeout: float = 60.0):
         self.base_url = base_url
         self.dimension = dimension
-        self._client = httpx.AsyncClient(timeout=timeout)
+        self._client = httpx.AsyncClient(timeout=timeout, trust_env=False)
 
     async def close(self) -> None:
         await self._client.aclose()

@@ -75,3 +75,17 @@ class SearchBatchRequest(BaseModel):
 class DeleteRequest(BaseModel):
     type: str
     data_id: str
+
+
+class CheckIdsRequest(BaseModel):
+    type: str
+    ids: list[str]
+
+    @field_validator("ids")
+    @classmethod
+    def ids_validate(cls, v: list) -> list:
+        if not v:
+            raise ValueError("ids cannot be empty")
+        if len(v) > 1000:
+            raise ValueError("ids cannot exceed 1000")
+        return v

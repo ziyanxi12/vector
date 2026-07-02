@@ -52,6 +52,21 @@ class EsRepository(ABC):
         self, index: str, query: str, top_k: int, filters: dict
     ) -> list[SearchResult]: ...
 
+    @abstractmethod
+    async def count(self, index: str) -> int:
+        """获取索引文档总数"""
+        ...
+
+    @abstractmethod
+    async def list_ids(self, index: str, limit: int, offset: int) -> tuple[list[str], int]:
+        """分页获取 data_id 列表，返回 (ids, total)"""
+        ...
+
+    @abstractmethod
+    async def check_ids_exists(self, index: str, ids: list[str]) -> tuple[list[str], list[str]]:
+        """批量检查 ID 是否存在，返回 (exists, missing)"""
+        ...
+
 
 class MockEsRepository(EsRepository):
     def __init__(self):
@@ -158,3 +173,18 @@ class MockEsRepository(EsRepository):
             )
         results.sort(key=lambda r: r.score, reverse=True)
         return results[:top_k]
+
+    async def count(self, index: str) -> int:
+        return len(self._get_index(index))
+
+    async def list_ids(self, index: str, limit: int, offset: int) -> tuple[list[str], int]:
+        store = self._get_index(index)
+        total = len(store)
+        ids = list(store.keys())[offset:offset + limit]
+        return ids, total
+
+    async def check_ids_exists(self, index: str, ids: list[str]) -> tuple[list[str], list[str]]:
+        store = self._get_index(index)
+        exists = [id for id in ids if id in store]
+        missing = list(set(ids) - set(exists))
+        return exists, missing
