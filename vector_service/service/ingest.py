@@ -11,7 +11,7 @@ from model.response import IngestResponse
 
 logger = get_logger(__name__)
 
-BATCH_SIZE = 50
+BATCH_SIZE = 20
 
 
 async def ingest(
