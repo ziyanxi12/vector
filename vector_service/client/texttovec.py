@@ -38,7 +38,7 @@ class TextToVecClient:
         for attempt in range(max_retries + 1):
             try:
                 response = await self._client.post(
-                    f"{self.base_url}/textToVec",
+                    f"{self.base_url}/embedding/text2vector",
                     json={
                         "dimension": self.dimension,
                         "text_value": [item.model_dump() for item in items],
@@ -62,6 +62,6 @@ class TextToVecClient:
                 raise
 
         elapsed = (time.monotonic() - t0) * 1000
-        results = [VectorResult(**v) for v in data["vectors"]]
+        results = [VectorResult(**v) for v in data["content"]]
         logger.debug("texttovec encode done: returned=%d [%.0fms]", len(results), elapsed)
         return results
