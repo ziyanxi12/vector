@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from api.router import router
 from config import settings
 from logger import get_logger, setup_logging
+from version import __version__
 
 setup_logging(settings.log_dir)
 logger = get_logger(__name__)
@@ -11,7 +12,7 @@ logger = get_logger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     from dependencies import get_es_repository, get_texttovec_client
-    logger.info("service starting: es_mock=%s log_dir=%s", settings.es_mock, settings.log_dir)
+    logger.info("service starting: version=%s es_mock=%s log_dir=%s", __version__, settings.es_mock, settings.log_dir)
     if not settings.es_mock:
         from client.es_real import ElasticsearchRepository
         repo: ElasticsearchRepository = get_es_repository()
