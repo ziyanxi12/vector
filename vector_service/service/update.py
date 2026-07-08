@@ -25,9 +25,7 @@ async def update(
     fields: dict = {}
 
     if request.text is not None:
-        t1 = time.monotonic()
         vectors = await texttovec.encode([TextItem(text=request.text, text_id=request.data_id)])
-        logger.debug("update vectorize done [%.0fms]", (time.monotonic() - t1) * 1000)
         fields["text"] = request.text
         fields["vector"] = vectors[0].vector
 
@@ -36,4 +34,3 @@ async def update(
 
     logger.debug("update fields: %s", list(fields.keys()))
     await es.update(handler.index_name, request.data_id, fields)
-    logger.debug("update done: data_id=%s [%.0fms]", request.data_id, (time.monotonic() - t0) * 1000)

@@ -5,7 +5,7 @@ from config import settings
 from logger import get_logger, setup_logging
 from version import __version__
 
-setup_logging(settings.log_dir)
+setup_logging(settings.log_dir, verbose_http=settings.log_verbose_http)
 logger = get_logger(__name__)
 
 

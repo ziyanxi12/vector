@@ -29,7 +29,8 @@ class TextToVecClient:
         await self._client.aclose()
 
     async def encode(self, items: list[TextItem]) -> list[VectorResult]:
-        logger.debug("texttovec encode: items=%d dimension=%d", len(items), self.dimension)
+        logger.debug("texttovec request: url=%s items=%d dimension=%d", 
+                    self.base_url, len(items), self.dimension)
         t0 = time.monotonic()
         
         max_retries = 3
@@ -54,14 +55,17 @@ class TextToVecClient:
                     await asyncio.sleep(wait_time)
                     continue
                 else:
-                    logger.error("texttovec HTTP error [%.0fms]: status=%d url=%s",
-                                (time.monotonic() - t0) * 1000, e.response.status_code, e.request.url)
+                    logger.error("texttovec failed: status=%d url=%s reason=%s [%.0fms]",
+                                e.response.status_code, e.request.url, 
+                                e.response.text[:200] if e.response.text else "N/A",
+                                (time.monotonic() - t0) * 1000)
                     raise
             except Exception as e:
-                logger.error("texttovec request failed [%.0fms]: %s", (time.monotonic() - t0) * 1000, e, exc_info=True)
+                logger.error("texttovec request failed: %s [%.0fms]", 
+                            e, (time.monotonic() - t0) * 1000, exc_info=True)
                 raise
 
         elapsed = (time.monotonic() - t0) * 1000
         results = [VectorResult(**v) for v in data["content"]]
-        logger.debug("texttovec encode done: returned=%d [%.0fms]", len(results), elapsed)
+        logger.debug("texttovec response: status=200 vectors=%d [%.0fms]", len(results), elapsed)
         return results

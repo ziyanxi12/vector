@@ -43,9 +43,7 @@ async def ingest(
     async def _vectorize(batch: list, batch_num: int) -> list:
         text_items = [TextItem(text=item.text, text_id=item.data_id) for item, _ in batch]
         logger.debug("ingest batch %d/%d: encoding %d items", batch_num, total_batches, len(batch))
-        t0 = time.monotonic()
         vectors = await texttovec.encode(text_items)
-        logger.debug("vectorize batch %d/%d done [%.0fms]", batch_num, total_batches, (time.monotonic() - t0) * 1000)
         return vectors
 
     # 提前启动第一个 batch 的向量化
@@ -77,11 +75,7 @@ async def ingest(
                 continue
             docs.append(EsDoc(data_id=item.data_id, text=item.text, vector=vector, metadata=metadata))
 
-        t1 = time.monotonic()
         result = await es.bulk_upsert(handler.index_name, docs)
-        logger.debug("es bulk_upsert batch %d/%d: succeeded=%d failed=%d [%.0fms]",
-                     batch_num, total_batches, len(result.succeeded), len(result.failed),
-                     (time.monotonic() - t1) * 1000)
 
         if result.failed:
             for f in result.failed:

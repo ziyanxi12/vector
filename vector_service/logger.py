@@ -38,7 +38,7 @@ class _DailyFileHandler(logging.FileHandler):
         super().emit(record)
 
 
-def setup_logging(log_dir: str) -> None:
+def setup_logging(log_dir: str, verbose_http: bool = False) -> None:
     formatter = logging.Formatter(
         "%(asctime)s [%(levelname)s] %(name)s: %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
@@ -58,6 +58,11 @@ def setup_logging(log_dir: str) -> None:
     root.setLevel(logging.DEBUG)
     root.addHandler(debug_handler)
     root.addHandler(service_handler)
+
+    if not verbose_http:
+        logging.getLogger("httpcore").setLevel(logging.WARNING)
+        logging.getLogger("httpx").setLevel(logging.WARNING)
+        logging.getLogger("elastic_transport.transport").setLevel(logging.WARNING)
 
 
 def get_logger(name: str) -> logging.Logger:

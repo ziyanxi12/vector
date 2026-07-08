@@ -1,8 +1,14 @@
 from __future__ import annotations
 
+import time
+
 from elasticsearch import AsyncElasticsearch, NotFoundError
 from elasticsearch.helpers import async_streaming_bulk
+
+from logger import get_logger
 from .es_repository import BulkResult, EsDoc, EsRepository, SearchResult
+
+logger = get_logger(__name__)
 
 INDEX_TEMPLATE = {
     "index_patterns": ["vec_*"],
@@ -46,6 +52,9 @@ class ElasticsearchRepository(EsRepository):
             await self._es.indices.create(index=index)
 
     async def bulk_upsert(self, index: str, docs: list[EsDoc]) -> BulkResult:
+        logger.debug("es bulk_upsert: index=%s docs=%d", index, len(docs))
+        t0 = time.monotonic()
+        
         actions = [
             {
                 "_op_type": "index",
@@ -65,9 +74,18 @@ class ElasticsearchRepository(EsRepository):
                 succeeded.append(info["index"]["_id"])
             else:
                 failed.append({"data_id": info["index"]["_id"], "error": str(info["index"].get("error"))})
+        
+        elapsed = (time.monotonic() - t0) * 1000
+        if failed:
+            logger.warning("es bulk_upsert partial failure: index=%s succeeded=%d failed=%d [%.0fms]",
+                          index, len(succeeded), len(failed), elapsed)
+        else:
+            logger.debug("es bulk_upsert done: succeeded=%d [%.0fms]", len(succeeded), elapsed)
+        
         return BulkResult(succeeded=succeeded, failed=failed)
 
     async def get(self, index: str, data_id: str) -> EsDoc | None:
+        logger.debug("es get: index=%s data_id=%s", index, data_id)
         try:
             resp = await self._es.get(index=index, id=data_id)
             src = resp["_source"]
@@ -78,21 +96,28 @@ class ElasticsearchRepository(EsRepository):
                 metadata=src["metadata"],
             )
         except NotFoundError:
+            logger.debug("es get not found: index=%s data_id=%s", index, data_id)
             return None
 
     async def update(self, index: str, data_id: str, fields: dict) -> None:
+        logger.debug("es update: index=%s data_id=%s fields=%s", index, data_id, list(fields.keys()))
         await self._es.update(index=index, id=data_id, doc=fields)
 
     async def delete(self, index: str, data_id: str) -> bool:
+        logger.debug("es delete: index=%s data_id=%s", index, data_id)
         try:
             await self._es.delete(index=index, id=data_id)
             return True
         except NotFoundError:
+            logger.debug("es delete not found: index=%s data_id=%s", index, data_id)
             return False
 
     async def knn_search(
         self, index: str, query_vector: list[float], top_k: int, filters: dict
     ) -> list[SearchResult]:
+        logger.debug("es knn_search: index=%s top_k=%d filters=%s", index, top_k, filters or "none")
+        t0 = time.monotonic()
+        
         knn = {
             "field": "vector",
             "query_vector": query_vector,
@@ -103,11 +128,17 @@ class ElasticsearchRepository(EsRepository):
             knn["filter"] = _build_filters(filters)
 
         resp = await self._es.search(index=index, knn=knn, size=top_k)
-        return _parse_hits(resp)
+        results = _parse_hits(resp)
+        logger.debug("es knn_search done: hits=%d [%.0fms]", len(results), (time.monotonic() - t0) * 1000)
+        return results
 
     async def text_search(
         self, index: str, query: str, top_k: int, filters: dict
     ) -> list[SearchResult]:
+        logger.debug("es text_search: index=%s query=%r top_k=%d filters=%s", 
+                    index, query[:50], top_k, filters or "none")
+        t0 = time.monotonic()
+        
         must = {"match": {"text": query}}
         if filters:
             body = {"query": {"bool": {"must": must, "filter": _build_filters(filters)}}}
@@ -115,16 +146,22 @@ class ElasticsearchRepository(EsRepository):
             body = {"query": must}
 
         resp = await self._es.search(index=index, body=body, size=top_k)
-        return _parse_hits(resp)
+        results = _parse_hits(resp)
+        logger.debug("es text_search done: hits=%d [%.0fms]", len(results), (time.monotonic() - t0) * 1000)
+        return results
 
     async def count(self, index: str) -> int:
+        logger.debug("es count: index=%s", index)
         try:
             resp = await self._es.count(index=index)
+            logger.debug("es count done: count=%d", resp["count"])
             return resp["count"]
         except NotFoundError:
+            logger.debug("es count: index=%s not found", index)
             return 0
 
     async def list_ids(self, index: str, limit: int, offset: int) -> tuple[list[str], int]:
+        logger.debug("es list_ids: index=%s limit=%d offset=%d", index, limit, offset)
         total = await self.count(index)
         if total == 0:
             return [], 0
@@ -136,15 +173,19 @@ class ElasticsearchRepository(EsRepository):
             from_=offset
         )
         ids = [hit["_source"]["data_id"] for hit in resp["hits"]["hits"]]
+        logger.debug("es list_ids done: total=%d returned=%d", total, len(ids))
         return ids, total
 
     async def check_ids_exists(self, index: str, ids: list[str]) -> tuple[list[str], list[str]]:
+        logger.debug("es check_ids_exists: index=%s ids_count=%d", index, len(ids))
         try:
             resp = await self._es.mget(index=index, body={"ids": ids})
             exists = [doc["_id"] for doc in resp["docs"] if doc["found"]]
             missing = list(set(ids) - set(exists))
+            logger.debug("es check_ids_exists done: exists=%d missing=%d", len(exists), len(missing))
             return exists, missing
         except NotFoundError:
+            logger.debug("es check_ids_exists: index=%s not found", index)
             return [], ids
 
 

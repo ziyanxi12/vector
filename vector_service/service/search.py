@@ -56,35 +56,23 @@ async def search_batch(
 
 
 async def _vector_search(request, handler, texttovec, es) -> list[SearchResult]:
-    t0 = time.monotonic()
     vectors = await texttovec.encode([TextItem(text=request.query, text_id="query")])
-    logger.debug("vectorize done [%.0fms]", (time.monotonic() - t0) * 1000)
-
-    t1 = time.monotonic()
     results = await es.knn_search(handler.index_name, vectors[0].vector, request.top_k, request.filters)
-    logger.debug("knn_search done: hits=%d [%.0fms]", len(results), (time.monotonic() - t1) * 1000)
     return results
 
 
 async def _text_search(request, handler, es) -> list[SearchResult]:
-    t0 = time.monotonic()
     results = await es.text_search(handler.index_name, request.query, request.top_k, request.filters)
-    logger.debug("text_search done: hits=%d [%.0fms]", len(results), (time.monotonic() - t0) * 1000)
     return results
 
 
 async def _hybrid_search(request, handler, texttovec, es) -> list[SearchResult]:
-    t0 = time.monotonic()
     vectors = await texttovec.encode([TextItem(text=request.query, text_id="query")])
-    logger.debug("vectorize done [%.0fms]", (time.monotonic() - t0) * 1000)
-
-    t1 = time.monotonic()
+    
     vector_results, text_results = await asyncio.gather(
         es.knn_search(handler.index_name, vectors[0].vector, request.top_k, request.filters),
         es.text_search(handler.index_name, request.query, request.top_k, request.filters),
     )
-    logger.debug("hybrid es query done: knn=%d text=%d [%.0fms]",
-                 len(vector_results), len(text_results), (time.monotonic() - t1) * 1000)
 
     vector_score_map = {r.data_id: r.score for r in vector_results}
 
