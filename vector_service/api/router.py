@@ -1,11 +1,12 @@
 import time
+import uuid
 
 from fastapi import APIRouter, Depends, HTTPException
 
 from dependencies import get_es_repository, get_texttovec_client
 from handler.registry import get_handler
 from logger import get_logger
-from model.request import DeleteRequest, IngestRequest, SearchBatchRequest, SearchRequest, UpdateRequest, CheckIdsRequest
+from model.request import DeleteRequest, IngestItem, IngestRequest, SearchBatchRequest, SearchRequest, UpdateRequest, CheckIdsRequest
 from model.response import IngestResponse, ItemResponse, SearchBatchResponse, SearchResponse, ListIdsResponse, CheckIdsResponse
 from service import ingest as ingest_svc
 from service import search as search_svc
@@ -143,6 +144,40 @@ async def delete_item(
 
 def _ms(t0: float) -> float:
     return (time.monotonic() - t0) * 1000
+
+
+@router.get("/test/ingest")
+async def test_ingest(
+    type: str = "component",
+    texttovec=Depends(get_texttovec_client),
+    es=Depends(get_es_repository),
+):
+    """写入 2 条测试数据，验证入库成功后自动清除，返回测试结果。"""
+    test_items = [
+        IngestItem(
+            data_id=f"__test__{uuid.uuid4().hex}",
+            text=f"测试数据 {i}",
+            metadata={"name": f"test-{i}", "lib_name": "__test__", "component_name": "test"},
+        )
+        for i in range(2)
+    ]
+    request = IngestRequest(type=type, items=test_items)
+    handler = get_handler(type)
+
+    result = await ingest_svc.ingest(request, handler, texttovec, es)
+
+    cleanup_errors = []
+    for item in test_items:
+        try:
+            await es.delete(handler.index_name, item.data_id)
+        except Exception as e:
+            cleanup_errors.append(str(e))
+
+    return {
+        "succeeded": result.succeeded,
+        "failed": result.failed,
+        "cleanup_errors": cleanup_errors,
+    }
 
 
 @router.get("/ids", response_model=ListIdsResponse)
