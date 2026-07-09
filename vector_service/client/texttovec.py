@@ -47,6 +47,7 @@ class TextToVecClient:
                 )
                 response.raise_for_status()
                 data = response.json()
+                break
             except httpx.HTTPStatusError as e:
                 if e.response.status_code in retry_statuses and attempt < max_retries:
                     wait_time = 2 ** attempt
@@ -66,6 +67,9 @@ class TextToVecClient:
                 raise
 
         elapsed = (time.monotonic() - t0) * 1000
+        if "content" not in data:
+            logger.error("texttovec unexpected response shape: keys=%s body=%s", list(data.keys()), str(data)[:500])
+            raise KeyError(f"texttovec response missing 'content' key, got: {list(data.keys())}")
         results = [VectorResult(**v) for v in data["content"]]
         logger.debug("texttovec response: status=200 vectors=%d [%.0fms]", len(results), elapsed)
         return results

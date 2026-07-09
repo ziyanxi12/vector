@@ -30,6 +30,9 @@ class EsRepository(ABC):
     async def close(self) -> None:
         pass
 
+    async def ensure_index(self, index: str) -> None:
+        pass
+
     @abstractmethod
     async def bulk_upsert(self, index: str, docs: list[EsDoc]) -> BulkResult: ...
 
@@ -80,7 +83,7 @@ class MockEsRepository(EsRepository):
 
     def _matches_filters(self, doc: dict, filters: dict) -> bool:
         for key, value in filters.items():
-            parts = key.split(".")
+            parts = f"metadata.{key}".split(".")
             obj = doc
             for part in parts:
                 obj = obj.get(part) if isinstance(obj, dict) else None

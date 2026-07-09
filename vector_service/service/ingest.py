@@ -28,7 +28,7 @@ async def ingest(
             validated_metadata = handler.validate_metadata(item.metadata)
             validated_items.append((item, validated_metadata))
         except Exception as e:
-            logger.warning("metadata validation failed: data_id=%s error=%s", item.data_id, e)
+            logger.warning("metadata validation failed: data_id=%s metadata=%s error=%s", item.data_id, item.metadata, e)
             failed.append({"data_id": item.data_id, "error": str(e)})
 
     logger.debug("ingest validation done: valid=%d invalid=%d", len(validated_items), len(failed))
@@ -75,6 +75,7 @@ async def ingest(
                 continue
             docs.append(EsDoc(data_id=item.data_id, text=item.text, vector=vector, metadata=metadata))
 
+        await es.ensure_index(handler.index_name)
         result = await es.bulk_upsert(handler.index_name, docs)
 
         if result.failed:

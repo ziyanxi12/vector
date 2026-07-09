@@ -5,9 +5,8 @@ from config import settings
 
 class ComponentMetadata(BaseModel):
     name: str
-    canvas_name: str
+    lib_name: str
     component_name: str
-    domain: str
 
 
 class ComponentHandler(BaseHandler):
