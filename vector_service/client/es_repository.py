@@ -82,12 +82,9 @@ class MockEsRepository(EsRepository):
         return self._store[index]
 
     def _matches_filters(self, doc: dict, filters: dict) -> bool:
+        metadata = doc.get("metadata", {})
         for key, value in filters.items():
-            parts = f"metadata.{key}".split(".")
-            obj = doc
-            for part in parts:
-                obj = obj.get(part) if isinstance(obj, dict) else None
-            if obj != value:
+            if metadata.get(key) != value:
                 return False
         return True
 

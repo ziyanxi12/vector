@@ -8,6 +8,7 @@ class IconMetadata(BaseModel):
     description: str
     english_name: str
     category: str
+    group_id: int
 
 
 class IconHandler(BaseHandler):

@@ -7,6 +7,7 @@ class ComponentMetadata(BaseModel):
     name: str
     lib_name: str
     component_name: str
+    group_id: int
 
 
 class ComponentHandler(BaseHandler):

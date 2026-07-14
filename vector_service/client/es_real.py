@@ -190,7 +190,13 @@ class ElasticsearchRepository(EsRepository):
 
 
 def _build_filters(filters: dict) -> list[dict]:
-    return [{"term": {f"metadata.{k}.keyword": v}} for k, v in filters.items()]
+    result = []
+    for k, v in filters.items():
+        if isinstance(v, str):
+            result.append({"term": {f"metadata.{k}.keyword": v}})
+        else:
+            result.append({"term": {f"metadata.{k}": v}})
+    return result
 
 
 def _parse_hits(resp: dict) -> list[SearchResult]:
