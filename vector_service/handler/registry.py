@@ -1,13 +1,6 @@
 from fastapi import HTTPException
 from .base import BaseHandler
-from .component import ComponentHandler
-from .icon import IconHandler
 from config import settings
-
-_registry: dict[str, BaseHandler] = {
-    "component": ComponentHandler(),
-    "icon": IconHandler(),
-}
 
 
 class GenericHandler(BaseHandler):
@@ -23,8 +16,6 @@ class GenericHandler(BaseHandler):
 
 
 def get_handler(type_name: str) -> BaseHandler:
-    if type_name in _registry:
-        return _registry[type_name]
     if settings.allow_dynamic_type:
         return GenericHandler(type_name)
     raise HTTPException(status_code=400, detail=f"Unknown type: {type_name}")

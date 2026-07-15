@@ -61,6 +61,14 @@ class TextToVecClient:
                                 e.response.text[:200] if e.response.text else "N/A",
                                 (time.monotonic() - t0) * 1000)
                     raise
+            except httpx.ConnectError as e:
+                logger.error("texttovec connection failed: url=%s error=%s [%.0fms]", 
+                            self.base_url, e, (time.monotonic() - t0) * 1000)
+                raise
+            except httpx.TimeoutException as e:
+                logger.error("texttovec timeout: url=%s error=%s [%.0fms]", 
+                            self.base_url, e, (time.monotonic() - t0) * 1000)
+                raise
             except Exception as e:
                 logger.error("texttovec request failed: %s [%.0fms]", 
                             e, (time.monotonic() - t0) * 1000, exc_info=True)

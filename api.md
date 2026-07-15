@@ -312,25 +312,43 @@ GET /api/v1/item?type=component&data_id=comp_001
 
 ---
 
-## Metadata 字段定义
+## Metadata 字段说明
 
-### component（组件集）
+**metadata 完全透传，不做字段验证**。
 
-| 字段 | 类型 | 必填 |
-|------|------|------|
-| name | string | 是 |
-| canvas_name | string | 是 |
-| component_name | string | 是 |
-| domain | string | 是 |
+上游可以传入任意结构的 metadata，服务会原样存储和返回。筛选时也支持对任意 metadata 字段进行过滤。
 
-### icon（图标）
+### 示例
 
-| 字段 | 类型 | 必填 |
-|------|------|------|
-| name | string | 是 |
-| description | string | 是 |
-| english_name | string | 是 |
-| category | string | 是 |
+**入库时**：
+```json
+{
+  "data_id": "icon_001",
+  "text": "首页图标",
+  "metadata": {
+    "name": "首页",
+    "category": "navigation",
+    "group_id": 1,
+    "any_field": "any_value"  // ← 任意字段都可以
+  }
+}
+```
+
+**筛选时**：
+```json
+{
+  "filters": {
+    "group_id": 1,            // ← 数字类型筛选
+    "category": "navigation"  // ← 字符串类型筛选
+  }
+}
+```
+
+### 设计理念
+
+- **上游自治**：metadata 结构由上游业务定义
+- **灵活扩展**：新增字段无需修改向量服务代码
+- **类型智能处理**：字符串用 `.keyword` 精确匹配，其他类型直接匹配
 
 ---
 

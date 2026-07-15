@@ -40,16 +40,27 @@ class ElasticsearchRepository(EsRepository):
         if username and password:
             kwargs["basic_auth"] = (username, password)
         self._es = AsyncElasticsearch(hosts=[url], verify_certs=verify_certs, **kwargs)
+        self._url = url
 
     async def close(self) -> None:
         await self._es.close()
 
     async def ensure_template(self) -> None:
-        await self._es.indices.put_index_template(name="vec_template", body=INDEX_TEMPLATE)
+        try:
+            await self._es.indices.put_index_template(name="vec_template", body=INDEX_TEMPLATE)
+            logger.info("es template created: name=vec_template")
+        except Exception as e:
+            logger.error("es connection failed: url=%s error=%s", self._url, e, exc_info=True)
+            raise
 
     async def ensure_index(self, index: str) -> None:
-        if not await self._es.indices.exists(index=index):
-            await self._es.indices.create(index=index)
+        try:
+            if not await self._es.indices.exists(index=index):
+                await self._es.indices.create(index=index)
+                logger.info("es index created: index=%s", index)
+        except Exception as e:
+            logger.error("es index operation failed: index=%s error=%s", index, e, exc_info=True)
+            raise
 
     async def bulk_upsert(self, index: str, docs: list[EsDoc]) -> BulkResult:
         logger.debug("es bulk_upsert: index=%s docs=%d", index, len(docs))

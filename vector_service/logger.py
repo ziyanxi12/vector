@@ -1,5 +1,6 @@
 import logging
 import os
+import shutil
 from datetime import date
 from logging import LogRecord
 
@@ -15,25 +16,36 @@ class _ExcludeDebugFilter(logging.Filter):
 
 
 class _DailyFileHandler(logging.FileHandler):
-    """File handler that rolls over to a new file at midnight."""
+    """File handler that rolls over to a new file at midnight.
+    
+    Current day log: vector-service.txt / vector-service-debug.txt
+    Historical logs: vector-service-YYYY-MM-DD.txt / vector-service-YYYY-MM-DD-debug.txt
+    """
 
     def __init__(self, log_dir: str, suffix: str):
         self._log_dir = log_dir
         self._suffix = suffix
         self._current_date = date.today()
         os.makedirs(log_dir, exist_ok=True)
-        super().__init__(self._build_path(), encoding="utf-8")
+        super().__init__(self._build_current_path(), encoding="utf-8")
 
-    def _build_path(self) -> str:
-        date_str = self._current_date.strftime("%Y-%m-%d")
+    def _build_current_path(self) -> str:
+        return os.path.join(self._log_dir, f"vector-service{self._suffix}")
+
+    def _build_dated_path(self, d: date) -> str:
+        date_str = d.strftime("%Y-%m-%d")
         return os.path.join(self._log_dir, f"vector-service-{date_str}{self._suffix}")
 
     def emit(self, record: LogRecord) -> None:
         today = date.today()
         if today != self._current_date:
             self.close()
+            old_path = self._build_current_path()
+            new_path = self._build_dated_path(self._current_date)
+            if os.path.exists(old_path):
+                shutil.move(old_path, new_path)
             self._current_date = today
-            self.baseFilename = os.path.abspath(self._build_path())
+            self.baseFilename = os.path.abspath(self._build_current_path())
             self.stream = self._open()
         super().emit(record)
 
