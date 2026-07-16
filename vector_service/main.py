@@ -22,8 +22,6 @@ async def check_texttovec_connection() -> bool:
 
 
 async def check_es_connection() -> bool:
-    if settings.es_mock:
-        return True
     try:
         from dependencies import get_es_repository
         repo = get_es_repository()
@@ -37,7 +35,7 @@ async def check_es_connection() -> bool:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     from dependencies import get_es_repository, get_texttovec_client
-    logger.info("service starting: version=%s es_mock=%s log_dir=%s", __version__, settings.es_mock, settings.log_dir)
+    logger.info("service starting: version=%s log_dir=%s", __version__, settings.log_dir)
     
     texttovec_ok = await check_texttovec_connection()
     es_ok = await check_es_connection()
@@ -52,8 +50,7 @@ async def lifespan(app: FastAPI):
                 "ok" if es_ok else "FAILED")
     yield
     await get_texttovec_client().close()
-    if not settings.es_mock:
-        await get_es_repository().close()
+    await get_es_repository().close()
     logger.info("service stopped")
 
 

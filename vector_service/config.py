@@ -8,7 +8,6 @@ class Settings(BaseSettings):
     texttovec_dimension: int = 128
     texttovec_timeout: float = 60.0
 
-    es_mock: bool = True
     es_url: str = "http://localhost:9200"
     es_username: str = ""
     es_password: str = ""

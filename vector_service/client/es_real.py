@@ -123,6 +123,36 @@ class ElasticsearchRepository(EsRepository):
             logger.debug("es delete not found: index=%s data_id=%s", index, data_id)
             return False
 
+    async def bulk_delete(self, index: str, data_ids: list[str]) -> tuple[list[str], list[str]]:
+        logger.debug("es bulk_delete: index=%s ids=%d", index, len(data_ids))
+        t0 = time.monotonic()
+        
+        deleted = []
+        not_found = []
+        
+        actions = [
+            {"_op_type": "delete", "_index": index, "_id": data_id}
+            for data_id in data_ids
+        ]
+        
+        async for ok, info in async_streaming_bulk(self._es, actions, raise_on_error=False):
+            if ok:
+                deleted.append(info["delete"]["_id"])
+            else:
+                error_info = info.get("delete", {})
+                data_id = error_info.get("_id", "")
+                status = error_info.get("status", 0)
+                if status == 404 or "not found" in str(error_info.get("error", "")).lower():
+                    not_found.append(data_id)
+                else:
+                    logger.warning("es bulk_delete unexpected error: data_id=%s error=%s", 
+                                  data_id, error_info.get("error"))
+        
+        elapsed = (time.monotonic() - t0) * 1000
+        logger.info("es bulk_delete done: index=%s deleted=%d not_found=%d [%.0fms]",
+                    index, len(deleted), len(not_found), elapsed)
+        return deleted, not_found
+
     async def knn_search(
         self, index: str, query_vector: list[float], top_k: int, filters: dict
     ) -> list[SearchResult]:

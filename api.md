@@ -312,6 +312,53 @@ GET /api/v1/item?type=component&data_id=comp_001
 
 ---
 
+## 7. 批量删除
+
+**POST** `/api/v1/items/delete`
+
+批量删除多个数据，返回成功和失败的 ID 列表。
+
+### 请求
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| type | string | 是 | 数据类型 |
+| data_ids | array[string] | 是 | 要删除的 ID 列表，最多 1000 条 |
+
+```json
+{
+  "type": "icon",
+  "data_ids": ["id1", "id2", "id3"]
+}
+```
+
+### 响应 `200`
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| deleted | array[string] | 成功删除的 ID 列表 |
+| not_found | array[string] | 未找到的 ID 列表 |
+| total_deleted | integer | 删除数量 |
+| total_not_found | integer | 未找到数量 |
+
+```json
+{
+  "deleted": ["id1", "id2"],
+  "not_found": ["id3"],
+  "total_deleted": 2,
+  "total_not_found": 1
+}
+```
+
+### 错误
+
+| 状态码 | 原因 |
+|--------|------|
+| 400 | 未知 type |
+| 422 | data_ids 为空或超过 1000 条 |
+
+---
+
 ## Metadata 字段说明
 
 **metadata 完全透传，不做字段验证**。
@@ -364,14 +411,13 @@ cp vector_service/.env.example vector_service/.env
 |----------|--------|------|
 | TEXTTOVEC_BASE_URL | `http://localhost:8099` | TextToVec 服务地址 |
 | TEXTTOVEC_DIMENSION | `128` | 向量维度，需与 TextToVec 服务保持一致 |
-| ES_MOCK | `true` | `true` 使用内存 mock；`false` 连接真实 ES |
-| ES_URL | `http://localhost:9200` | 真实 ES 地址，ES_MOCK=false 时生效 |
-| ES_USERNAME | `` | ES 用户名，ES_MOCK=false 时生效 |
-| ES_PASSWORD | `` | ES 密码，ES_MOCK=false 时生效 |
+| ES_URL | `http://localhost:9200` | ES 地址 |
+| ES_USERNAME | `` | ES 用户名 |
+| ES_PASSWORD | `` | ES 密码 |
 
-### 本地开发（默认配置）
+### 本地开发
 
-无需任何额外服务，`ES_MOCK=true`，直接运行：
+确保 ES 和 TextToVec 服务已启动，然后运行：
 
 ```bash
 uvicorn vector_service.main:app --reload --port 8000
@@ -381,7 +427,6 @@ uvicorn vector_service.main:app --reload --port 8000
 
 ```bash
 # vector_service/.env
-ES_MOCK=false
 ES_URL=http://your-es-host:9200
 ES_USERNAME=your_username
 ES_PASSWORD=your_password

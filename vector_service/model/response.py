@@ -43,3 +43,10 @@ class CheckIdsResponse(BaseModel):
     missing: list[str]
     exists_count: int
     missing_count: int
+
+
+class DeleteBatchResponse(BaseModel):
+    deleted: list[str]
+    not_found: list[str]
+    total_deleted: int
+    total_not_found: int

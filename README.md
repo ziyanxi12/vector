@@ -130,12 +130,10 @@ cp vector_service/.env.example vector_service/.env
 TEXTTOVEC_BASE_URL=http://localhost:8099
 TEXTTOVEC_DIMENSION=128
 
-# Elasticsearch（可选，默认使用内存 mock）
-ES_MOCK=true
-# ES_MOCK=false
-# ES_URL=http://localhost:9200
-# ES_USERNAME=
-# ES_PASSWORD=
+# Elasticsearch
+ES_URL=http://localhost:9200
+ES_USERNAME=
+ES_PASSWORD=
 
 # 动态类型支持
 ALLOW_DYNAMIC_TYPE=true
@@ -253,7 +251,6 @@ curl -X POST http://localhost:8000/api/v1/search/batch \
 |----------|--------|------|
 | TEXTTOVEC_BASE_URL | `http://localhost:8099` | TextToVec 服务地址 |
 | TEXTTOVEC_DIMENSION | `128` | 向量维度 |
-| ES_MOCK | `true` | 是否使用内存 mock |
 | ES_URL | `http://localhost:9200` | ES 地址 |
 | ES_USERNAME | `` | ES 用户名 |
 | ES_PASSWORD | `` | ES 密码 |

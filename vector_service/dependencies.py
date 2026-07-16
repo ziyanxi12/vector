@@ -2,21 +2,18 @@ from __future__ import annotations
 
 from config import settings
 from client.texttovec import TextToVecClient
-from client.es_repository import EsRepository, MockEsRepository
+from client.es_repository import EsRepository
 
 _texttovec_client = TextToVecClient(
     settings.texttovec_base_url,
     settings.texttovec_dimension,
     timeout=settings.texttovec_timeout,
 )
-_mock_es = MockEsRepository()
 _es_real: EsRepository | None = None
 
 
 def get_es_repository() -> EsRepository:
     global _es_real
-    if settings.es_mock:
-        return _mock_es
     if _es_real is None:
         from client.es_real import ElasticsearchRepository
         _es_real = ElasticsearchRepository(

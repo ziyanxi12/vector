@@ -6,8 +6,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from dependencies import get_es_repository, get_texttovec_client
 from handler.registry import get_handler
 from logger import get_logger
-from model.request import DeleteRequest, IngestItem, IngestRequest, SearchBatchRequest, SearchRequest, UpdateRequest, CheckIdsRequest
-from model.response import IngestResponse, ItemResponse, SearchBatchResponse, SearchResponse, ListIdsResponse, CheckIdsResponse
+from model.request import DeleteRequest, DeleteBatchRequest, IngestItem, IngestRequest, SearchBatchRequest, SearchRequest, UpdateRequest, CheckIdsRequest
+from model.response import IngestResponse, ItemResponse, SearchBatchResponse, SearchResponse, ListIdsResponse, CheckIdsResponse, DeleteBatchResponse
 from service import ingest as ingest_svc
 from service import search as search_svc
 from service import update as update_svc
@@ -140,6 +140,32 @@ async def delete_item(
     logger.info("delete_item ok: type=%s data_id=%s [%.0fms]",
                 request.type, request.data_id, _ms(t0))
     return {"status": "ok"}
+
+
+@router.post("/items/delete", response_model=DeleteBatchResponse)
+async def delete_items(
+    request: DeleteBatchRequest,
+    es=Depends(get_es_repository),
+):
+    logger.debug("delete_items request: type=%s ids=%d", request.type, len(request.data_ids))
+    t0 = time.monotonic()
+    handler = get_handler(request.type)
+    deleted, not_found = await es.bulk_delete(handler.index_name, request.data_ids)
+    
+    elapsed = _ms(t0)
+    if not_found:
+        logger.warning("delete_items partial: type=%s deleted=%d not_found=%d [%.0fms]",
+                       request.type, len(deleted), len(not_found), elapsed)
+    else:
+        logger.info("delete_items ok: type=%s deleted=%d [%.0fms]",
+                    request.type, len(deleted), elapsed)
+    
+    return DeleteBatchResponse(
+        deleted=deleted,
+        not_found=not_found,
+        total_deleted=len(deleted),
+        total_not_found=len(not_found),
+    )
 
 
 def _ms(t0: float) -> float:
