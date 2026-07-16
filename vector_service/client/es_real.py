@@ -233,8 +233,18 @@ class ElasticsearchRepository(EsRepository):
 def _build_filters(filters: dict) -> list[dict]:
     result = []
     for k, v in filters.items():
-        if isinstance(v, str):
+        # 多值：使用 terms 查询（OR 逻辑）
+        if isinstance(v, list):
+            if not v:  # 空数组跳过
+                continue
+            if isinstance(v[0], str):
+                result.append({"terms": {f"metadata.{k}.keyword": v}})
+            else:
+                result.append({"terms": {f"metadata.{k}": v}})
+        # 单值字符串：使用 term + .keyword
+        elif isinstance(v, str):
             result.append({"term": {f"metadata.{k}.keyword": v}})
+        # 单值其他类型：使用 term
         else:
             result.append({"term": {f"metadata.{k}": v}})
     return result
