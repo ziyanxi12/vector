@@ -79,5 +79,7 @@ class TextToVecClient:
             logger.error("texttovec unexpected response shape: keys=%s body=%s", list(data.keys()), str(data)[:500])
             raise KeyError(f"texttovec response missing 'content' key, got: {list(data.keys())}")
         results = [VectorResult(**v) for v in data["content"]]
-        logger.debug("texttovec response: status=200 vectors=%d [%.0fms]", len(results), elapsed)
+        server_elapsed_ms = response.elapsed.total_seconds() * 1000 if response.elapsed else 0
+        logger.info("texttovec encode: items=%d dim=%d client_total=%.0fms server_elapsed=%.0fms url=%s",
+                    len(items), self.dimension, elapsed, server_elapsed_ms, self.base_url)
         return results

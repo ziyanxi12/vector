@@ -10,7 +10,7 @@ from model.response import SearchBatchResponse, SearchHit, SearchResponse
 
 logger = get_logger(__name__)
 
-_ES_SEARCH_CONCURRENCY = 10
+_ES_SEARCH_CONCURRENCY = 20
 
 
 async def search(
@@ -77,8 +77,9 @@ async def search_batch(
     es_ms = (time.monotonic() - t_es) * 1000
 
     total_ms = (time.monotonic() - t0) * 1000
-    logger.info("search_batch phases: mode=%s queries=%d encode=%.0fms es=%.0fms total=%.0fms",
-                request.mode, n, encode_ms, es_ms, total_ms)
+    total_hits = sum(len(raw) for raw in all_raw)
+    logger.info("search_batch phases: mode=%s queries=%d encode=%.0fms es=%.0fms total=%.0fms hits=%d",
+                request.mode, n, encode_ms, es_ms, total_ms, total_hits)
 
     return SearchBatchResponse(
         results=[

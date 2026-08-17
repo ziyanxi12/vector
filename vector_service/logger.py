@@ -53,7 +53,6 @@ class _DailyFileHandler(logging.FileHandler):
 def setup_logging(log_dir: str, verbose_http: bool = False) -> None:
     formatter = logging.Formatter(
         "%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
     )
 
     debug_handler = _DailyFileHandler(log_dir, "-debug.txt")
